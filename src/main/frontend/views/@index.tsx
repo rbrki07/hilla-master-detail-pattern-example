@@ -1,14 +1,16 @@
-// TODO Replace with your own main view.
-
 import { ViewConfig } from '@vaadin/hilla-file-router/types.js';
+import { VerticalLayout } from '@vaadin/react-components';
 
 export const config: ViewConfig = {
-  menu: {
-    exclude: true,
-  },
-  loginRequired: true,
+  menu: { exclude: true },
+  title: 'Home',
 };
 
-export default function MainView() {
-  return <main className="p-m">Please select a view from the menu on the left.</main>;
+export default function HomeView() {
+  return (
+    <VerticalLayout theme="margin">
+      <h2>Welcome to Hilla Master-Detail-Pattern Example Application</h2>
+      <p>Select an item from the menu</p>
+    </VerticalLayout>
+  );
 }
