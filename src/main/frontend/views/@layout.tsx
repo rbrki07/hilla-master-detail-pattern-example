@@ -1,32 +1,43 @@
-import { Outlet, useLocation, useNavigate } from 'react-router';
-import '@vaadin/icons';
-import {
-  AppLayout,
-  Avatar,
-  Icon,
-  MenuBar,
-  MenuBarItem,
-  MenuBarItemSelectedEvent,
-  ProgressBar,
-  Scroller,
-  SideNav,
-  SideNavItem,
-} from '@vaadin/react-components';
-import { Suspense, useMemo } from 'react';
-import { createMenuItems } from '@vaadin/hilla-file-router/runtime.js';
-import { useAuth } from 'Frontend/security/auth';
+import { createMenuItems, useViewConfig } from '@vaadin/hilla-file-router/runtime.js';
+import { effect, signal } from '@vaadin/hilla-react-signals';
+import { AppLayout, DrawerToggle, Icon, ProgressBar, Scroller, SideNav, SideNavItem } from '@vaadin/react-components';
+import { Suspense, useEffect } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 
-function Header() {
-  // TODO Replace with real application logo and name
+const documentTitleSignal = signal('');
+effect(() => {
+  document.title = documentTitleSignal.value;
+});
+
+// Publish for Vaadin to use
+(window as any).Vaadin.documentTitleSignal = documentTitleSignal;
+
+const Header = () => {
+  const currentTitle = useViewConfig()?.title;
+
+  useEffect(() => {
+    if (currentTitle) {
+      documentTitleSignal.value = currentTitle;
+    }
+  }, [currentTitle]);
+
   return (
-    <div className="flex p-m gap-m items-center" slot="drawer">
-      <Icon icon="vaadin:cubes" className="text-primary icon-l" />
-      <span className="font-semibold text-l">Hilla Master Detail Pattern Example</span>
-    </div>
+    <>
+      <DrawerToggle slot="navbar" aria-label="Menu toggle" />
+      <div className="flex p-m gap-m items-center" slot="drawer">
+        <Link to="/">
+          <Icon icon="vaadin:cubes" className="text-primary icon-l" />
+        </Link>
+        <span className="font-semibold text-l">Hilla Master-Detail-Pattern Example Application</span>
+      </div>
+      <h1 slot="navbar" className="text-l m-0">
+        {documentTitleSignal}
+      </h1>
+    </>
   );
-}
+};
 
-function MainMenu() {
+const MainMenu = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,61 +51,15 @@ function MainMenu() {
       ))}
     </SideNav>
   );
-}
-
-type UserMenuItem = MenuBarItem<{ action?: () => void | Promise<void> }>;
-
-function UserMenu() {
-  const { logout, state } = useAuth();
-
-  const fullName = state.user?.fullName;
-  const pictureUrl = state.user?.pictureUrl;
-  const profileUrl = state.user?.profileUrl;
-
-  const children: Array<UserMenuItem> = useMemo(() => {
-    const items: Array<UserMenuItem> = [];
-    if (profileUrl) {
-      items.push({ text: 'View Profile', action: () => window.open(profileUrl, 'blank')?.focus() });
-    }
-    // TODO Add additional items to the user menu if needed
-    items.push({ text: 'Logout', action: logout });
-    return items;
-  }, [profileUrl, logout]);
-
-  if (!state.user) {
-    return (
-      <span {...{ theme: 'badge error' }} slot="drawer">
-        Not logged in
-      </span>
-    );
-  }
-
-  const items: Array<UserMenuItem> = [
-    {
-      component: (
-        <>
-          <Avatar theme="xsmall" img={pictureUrl} name={fullName} colorIndex={5} className="mr-s" /> {fullName}
-        </>
-      ),
-      children: children,
-    },
-  ];
-  const onItemSelected = (event: MenuBarItemSelectedEvent<UserMenuItem>) => {
-    event.detail.value.action?.();
-  };
-  return (
-    <MenuBar theme="tertiary-inline" items={items} onItemSelected={onItemSelected} className="m-m" slot="drawer" />
-  );
-}
+};
 
 export default function MainLayout() {
   return (
-    <AppLayout primarySection="drawer">
+    <AppLayout primarySection="drawer" drawerOpened={false}>
       <Header />
       <Scroller slot="drawer">
         <MainMenu />
       </Scroller>
-      <UserMenu />
       <Suspense fallback={<ProgressBar indeterminate={true} className="m-0" />}>
         <Outlet />
       </Suspense>
